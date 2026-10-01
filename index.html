@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Parcel Theft Detection Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0d1117',
+                        cardBg: '#161b22',
+                        cardBorder: '#30363d',
+                        accentTeal: '#00bcd4',
+                        accentGlow: '#00e5ff',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+        }
+        .glow-teal {
+            box-shadow: 0 0 20px rgba(0, 188, 212, 0.2);
+        }
+        .glow-red {
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.4);
+        }
+        @keyframes pulse-alert {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .animate-alert {
+            animation: pulse-alert 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex flex-col justify-between selection:bg-cyan-500 selection:text-black">
+
+    <header class="max-w-7xl mx-auto w-full flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 bg-cardBg border border-cardBorder p-4 rounded-2xl shadow-lg">
+        <div>
+            <h1 class="text-xl font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-shield-halved text-cyan-400"></i> Hello, Homeowner
+            </h1>
+            <p class="text-sm text-gray-400">Monitoring ESP32 doorstep parcel security system in real-time.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+            <!-- System Status Toggle / Badge -->
+            <button id="connectionBtn" onclick="toggleConnection()" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800 transition hover:bg-emerald-900 cursor-pointer">
+                <span id="connIndicator" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span id="connText">ESP32 Online</span>
+            </button>
+            <!-- Battery Indicator -->
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-gray-900 border border-cardBorder text-gray-300">
+                <i class="fa-solid fa-battery-three-quarters text-cyan-400"></i>
+                <span id="batteryText">98% (4.12V)</span>
+            </div>
+            <!-- Digital Clock -->
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-gray-900 border border-cardBorder text-gray-300">
+                <i class="fa-regular fa-clock text-cyan-400"></i>
+                <span id="digitalClock">23:07:45</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto w-full flex-grow space-y-6">
+        <section id="heroBanner" class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-gray-900 via-slate-900 to-cyan-950 border border-cardBorder p-6 md:p-10 shadow-xl transition-all duration-300">
+            <div class="absolute right-0 top-0 bottom-0 w-1/3 opacity-20 bg-cover bg-center hidden lg:block" style="background-image: url('https://placehold.co/600x400/161b22/00bcd4?text=Smart+Parcel+Detection');"></div>
+            <div class="relative z-10 max-w-2xl">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-4">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> SYSTEM LIVE & ARMED
+                </div>
+                <h2 class="text-3xl md:text-5xl font-extrabold text-white tracking-tight mb-3">
+                    Smart Parcel <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-teal-300">Dashboard</span>
+                </h2>
+                <p class="text-gray-300 text-sm md:text-base leading-relaxed">
+                    Combining ESP32 microcontroller intelligence with high-precision load cells and ultrasonic proximity sensors. Immediate alerts trigger local vibration motors and instant web notifications upon unauthorized removal.
+                </p>
+            </div>
+        </section>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+            <!-- Card 1: Load Cell Weight Monitor -->
+            <div class="bg-cardBg border border-cardBorder rounded-2xl p-5 flex flex-col justify-between shadow-lg relative overflow-hidden group hover:border-cyan-500/50 transition">
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-xs uppercase tracking-wider font-semibold text-gray-400">Load Cell Sensor</span>
+                        <div class="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center">
+                            <i class="fa-solid fa-weight-scale"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-sm font-medium text-gray-300">Current Parcel Weight</h3>
+                    <div class="mt-2 flex items-baseline gap-2">
+                        <span id="weightDisplay" class="text-3xl font-bold text-white">1.45</span>
+                        <span class="text-gray-400 text-sm font-semibold">kg</span>
+                    </div>
+                </div>
+                <div class="mt-6 pt-4 border-t border-cardBorder/60">
+                    <div class="flex justify-between text-xs text-gray-400 mb-1">
+                        <span>Expected Tare: 0.05kg</span>
+                        <span id="weightStatusText" class="text-emerald-400 font-medium">Stable</span>
+                    </div>
+                    <div class="w-full bg-gray-800 rounded-full h-2">
+                        <div id="weightBar" class="bg-cyan-400 h-2 rounded-full transition-all duration-300" style="width: 48%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2: Ultrasonic Sensor -->
+            <div class="bg-cardBg border border-cardBorder rounded-2xl p-5 flex flex-col justify-between shadow-lg relative overflow-hidden group hover:border-cyan-500/50 transition">
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-xs uppercase tracking-wider font-semibold text-gray-400">Ultrasonic HC-SR04</span>
+                        <div class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center">
+                            <i class="fa-solid fa-ruler"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-sm font-medium text-gray-300">Object Distance & Presence</h3>
+                    <div class="mt-2 flex items-baseline gap-2">
+                        <span id="distanceDisplay" class="text-3xl font-bold text-white">4.2</span>
+                        <span class="text-gray-400 text-sm font-semibold">cm</span>
+                    </div>
+                </div>
+                <div class="mt-6 pt-4 border-t border-cardBorder/60 flex items-center justify-between">
+                    <span class="text-xs text-gray-400">Status Detection:</span>
+                    <span id="presenceBadge" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800">
+                        <i class="fa-solid fa-circle-check mr-1"></i> Object Present
+                    </span>
+                </div>
+            </div>
+
+            <!-- Card 3: Anti-Theft & Vibration Motor -->
+            <div id="securityCard" class="bg-cardBg border border-cardBorder rounded-2xl p-5 flex flex-col justify-between shadow-lg relative overflow-hidden transition">
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-xs uppercase tracking-wider font-semibold text-gray-400">Theft Protection</span>
+                        <div id="securityIconBg" class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center transition">
+                            <i id="securityIcon" class="fa-solid fa-lock"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-sm font-medium text-gray-300">Security & Vibration Motor</h3>
+                    <div class="mt-2">
+                        <span id="securityStatus" class="text-xl font-bold text-emerald-400 tracking-wide">SECURE</span>
+                    </div>
+                </div>
+                <div class="mt-6 pt-4 border-t border-cardBorder/60 flex items-center justify-between">
+                    <span class="text-xs text-gray-400">Motor Feedback:</span>
+                    <span id="motorState" class="text-xs font-mono px-2 py-1 bg-gray-900 rounded text-gray-400">IDLE (0 RPM)</span>
+                </div>
+            </div>
+
+            <!-- Card 4: Hardware Specs & BoM Info -->
+            <div class="bg-cardBg border border-cardBorder rounded-2xl p-5 flex flex-col justify-between shadow-lg relative overflow-hidden group hover:border-cyan-500/50 transition">
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-xs uppercase tracking-wider font-semibold text-gray-400">Hardware & BoM</span>
+                        <div class="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center">
+                            <i class="fa-solid fa-microchip"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-sm font-medium text-gray-300">ESP32 Platform Cost</h3>
+                    <div class="mt-2 flex items-baseline gap-1">
+                        <span class="text-3xl font-bold text-white">₹1,080</span>
+                        <span class="text-gray-400 text-xs">Total BoM</span>
+                    </div>
+                </div>
+                <div class="mt-6 pt-4 border-t border-cardBorder/60 flex justify-between items-center text-xs text-gray-400">
+                    <span>ESP32 + Load Cell + HC-SR04</span>
+                    <button onclick="openBomModal()" class="text-cyan-400 hover:underline font-medium">View Breakdown</button>
+                </div>
+            </div>
+        </div>
+
+        <section class="bg-cardBg border border-cardBorder rounded-2xl p-6 shadow-xl">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-4 border-b border-cardBorder">
+                <div>
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-cyan-400"></i> Interactive Simulation & Test Bench
+                    </h3>
+                    <p class="text-xs text-gray-400">Simulate doorstep delivery events, weight changes, and parcel theft triggers.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="simulateNormalDelivery()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-gray-800 hover:bg-gray-700 text-cyan-300 border border-cardBorder transition flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-box"></i> Place Parcel (3.0 kg)
+                    </button>
+                    <button onclick="simulateTheftEvent()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-red-950/60 hover:bg-red-900 text-red-400 border border-red-900/60 transition flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Trigger Theft Event!
+                    </button>
+                    <button onclick="resetSystem()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-gray-800 hover:bg-gray-700 text-gray-300 border border-cardBorder transition flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-rotate-right"></i> Reset System
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Weight Slider Control -->
+                <div class="bg-gray-900/60 p-4 rounded-xl border border-cardBorder space-y-3">
+                    <div class="flex justify-between text-sm">
+                        <span class="font-medium text-gray-300">Manual Weight Slider</span>
+                        <span id="sliderValueText" class="font-mono text-cyan-400">1.45 kg</span>
+                    </div>
+                    <input type="range" id="weightSlider" min="0" max="10" step="0.1" value="1.45" oninput="onWeightSliderChange(this.value)" class="w-full accent-cyan-400 cursor-pointer">
+                    <div class="flex justify-between text-xs text-gray-500">
+                        <span>Empty (0kg)</span>
+                        <span>Max (10kg)</span>
+                    </div>
+                </div>
+
+                <!-- Distance Slider Control -->
+                <div class="bg-gray-900/60 p-4 rounded-xl border border-cardBorder space-y-3">
+                    <div class="flex justify-between text-sm">
+                        <span class="font-medium text-gray-300">Ultrasonic Distance (HC-SR04)</span>
+                        <span id="distanceSliderText" class="font-mono text-cyan-400">4.2 cm</span>
+                    </div>
+                    <input type="range" id="distanceSlider" min="2" max="50" step="0.5" value="4.2" oninput="onDistanceSliderChange(this.value)" class="w-full accent-cyan-400 cursor-pointer">
+                    <div class="flex justify-between text-xs text-gray-500">
+                        <span>Close (2cm)</span>
+                        <span>Removed (&gt;30cm)</span>
+                    </div>
+                </div>
+
+                <!-- Quick Actions / Simulation Presets -->
+                <div class="bg-gray-900/60 p-4 rounded-xl border border-cardBorder flex flex-col justify-between">
+                    <span class="text-sm font-medium text-gray-300 mb-2 block">Vibration Motor & Buzzer Test</span>
+                    <div class="flex gap-2">
+                        <button onclick="testVibrationMotor(true)" class="flex-1 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-lg text-xs font-semibold transition cursor-pointer">
+                            Test Motor ON
+                        </button>
+                        <button onclick="testVibrationMotor(false)" class="flex-1 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 border border-cardBorder rounded-lg text-xs font-semibold transition cursor-pointer">
+                            Motor OFF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-cardBg border border-cardBorder rounded-2xl p-6 shadow-xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-clipboard-list text-cyan-400"></i> Real-Time Security & System Log
+                </h3>
+                <button onclick="clearLogs()" class="text-xs text-gray-400 hover:text-white transition">Clear Logs</button>
+            </div>
+            <div id="logContainer" class="bg-gray-950 rounded-xl p-4 font-mono text-xs text-gray-300 h-40 overflow-y-auto space-y-2 border border-cardBorder">
+                <div class="text-gray-500">[System Boot] ESP32 initialized successfully. Wi-Fi connected to SSID: Home_IoT_Net.</div>
+                <div class="text-emerald-400">[Load Cell] Calibrated zero offset. Sensor ready.</div>
+                <div class="text-emerald-400">[Ultrasonic] Sensor active on pins GPIO 23 (Trig) / GPIO 22 (Echo).</div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="max-w-7xl mx-auto w-full mt-6 text-center text-xs text-gray-500 border-t border-cardBorder pt-4 flex flex-col sm:flex-row justify-between items-center gap-2">
+        <p>Smart Parcel Theft Detection Platform • Built with ESP32 & IoT Sensors</p>
+        <p>Project Reference Design &mdash; Academic & Real-World Prototype</p>
+    </footer>
+
+    <div id="bomModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-cardBg border border-cardBorder rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+            <button onclick="closeBomModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <h3 class="text-lg font-bold text-white mb-1 flex items-center gap-2">
+                <i class="fa-solid fa-receipt text-cyan-400"></i> Bill of Materials (BoM)
+            </h3>
+            <p class="text-xs text-gray-400 mb-4">Component cost breakdown as specified in project documentation.</p>
+            <div class="space-y-2 font-mono text-xs">
+                <div class="flex justify-between py-2 border-b border-cardBorder"><span>ESP32 Microcontroller</span><span class="text-white font-semibold">₹350</span></div>
+                <div class="flex justify-between py-2 border-b border-cardBorder"><span>Ultrasonic Sensor (HC-SR04)</span><span class="text-white font-semibold">₹100</span></div>
+                <div class="flex justify-between py-2 border-b border-cardBorder"><span>Load Cell + HX711</span><span class="text-white font-semibold">₹250</span></div>
+                <div class="flex justify-between py-2 border-b border-cardBorder"><span>Vibration Motor / Buzzer</span><span class="text-white font-semibold">₹80</span></div>
+                <div class="flex justify-between py-2 border-b border-cardBorder"><span>Breadboard</span><span class="text-white font-semibold">₹100</span></div>
+                <div class="flex justify-between py-2 border-b border-cardBorder"><span>Jumper Wires</span><span class="text-white font-semibold">₹50</span></div>
+                <div class="flex justify-between py-2 border-b border-cardBorder"><span>Battery / Power Supply</span><span class="text-white font-semibold">₹150</span></div>
+                <div class="flex justify-between py-2 text-cyan-400 font-bold text-sm"><span>Total Estimated Cost</span><span>₹1,080</span></div>
+            </div>
+            <button onclick="closeBomModal()" class="w-full mt-6 py-2.5 bg-cyan-500 hover:bg-cyan-600 text-black font-semibold rounded-xl text-xs transition">
+                Close Modal
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Global State Variables
+        let isOnline = true;
+        let isTheftAlert = false;
+        let currentWeight = 1.45;
+        let currentDistance = 4.2;
+
+        // Digital Clock Interval
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('digitalClock').innerText = now.toTimeString().split(' ')[0];
+        }, 1000);
+
+        // Toggle System Connection
+        function toggleConnection() {
+            isOnline = !isOnline;
+            const btn = document.getElementById('connectionBtn');
+            const ind = document.getElementById('connIndicator');
+            const txt = document.getElementById('connText');
+            
+            if (isOnline) {
+                btn.className = "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800 transition hover:bg-emerald-900 cursor-pointer";
+                ind.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+                txt.innerText = "ESP32 Online";
+                addLog("ESP32 reconnected to Wi-Fi network.");
+            } else {
+                btn.className = "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-red-950 text-red-400 border border-red-800 transition hover:bg-red-900 cursor-pointer";
+                ind.className = "w-2 h-2 rounded-full bg-red-500";
+                txt.innerText = "ESP32 Offline";
+                addLog("[Warning] ESP32 connection lost! Check power source.", "text-red-400");
+            }
+        }
+
+        // Add Log Entry
+        function addLog(message, colorClass = "text-gray-300") {
+            const container = document.getElementById('logContainer');
+            const timeStr = new Date().toTimeString().split(' ')[0];
+            const div = document.createElement('div');
+            div.className = colorClass;
+            div.innerText = `[${timeStr}] ${message}`;
+            container.prepend(div);
+        }
+
+        // Clear Logs
+        function clearLogs() {
+            document.getElementById('logContainerinnerHTML', '');
+            document.getElementById('logContainer').innerHTML = '<div class="text-gray-500">[System] Logs cleared.</div>';
+        }
+
+        // Update UI based on current sensor state
+        function updateUI() {
+            // Weight updates
+            document.getElementById('weightDisplay').innerText = currentWeight.toFixed(2);
+            document.getElementById('weightSlider').value = currentWeight;
+            document.getElementById('sliderValueText').innerText = currentWeight.toFixed(2) + " kg";
+            const weightPercent = Math.min(100, (currentWeight / 10) * 100);
+            document.getElementById('weightBar').style.width = weightPercent + '%';
+
+            // Distance updates
+            document.getElementById('distanceDisplay').innerText = currentDistance.toFixed(1);
+            document.getElementById('distanceSlider').value = currentDistance;
+            document.getElementById('distanceSliderText').innerText = currentDistance.toFixed(1) + " cm";
+
+            const presenceBadge = document.getElementById('presenceBadge');
+            if (currentDistance <= 10) {
+                presenceBadge.className = "px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800";
+                presenceBadge.innerHTML = '<i class="fa-solid fa-circle-check mr-1"></i> Object Present';
+            } else {
+                presenceBadge.className = "px-2.5 py-1 rounded-full text-xs font-semibold bg-red-950 text-red-400 border border-red-800 animate-pulse";
+                presenceBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1"></i> Object Removed!';
+            }
+
+            // Theft / Security Check Logic
+            // Theft condition: Weight dropped below 0.1kg OR distance increased beyond 15cm while previously secured
+            const securityCard = document.getElementById('securityCard');
+            const securityStatus = document.getElementById('securityStatus');
+            const securityIcon = document.getElementById('securityIcon');
+            const securityIconBg = document.getElementById('securityIconBg');
+            const heroBanner = document.getElementById('heroBanner');
+            const motorState = document.getElementById('motorState');
+
+            if (currentWeight < 0.2 && currentDistance > 15 && isOnline) {
+                if (!isTheftAlert) {
+                    isTheftAlert = true;
+                    addLog("[ALERT] Unauthorized parcel removal detected! Vibration motor & buzzer activated.", "text-red-400 font-bold");
+                }
+                securityCard.className = "bg-red-950/40 border border-red-500/60 rounded-2xl p-5 flex flex-col justify-between shadow-lg glow-red transition animate-alert";
+                securityStatus.className = "text-xl font-bold text-red-400 tracking-wide";
+                securityStatus.innerText = "THEFT ALERT!";
+                securityIcon.className = "fa-solid fa-triangle-exclamation";
+                securityIconBg.className = "w-8 h-8 rounded-lg bg-red-500/20 text-red-400 flex items-center justify-center transition";
+                heroBanner.className = "relative overflow-hidden rounded-2xl bg-gradient-to-r from-red-950 via-slate-900 to-red-950 border border-red-500/40 p-6 md:p-10 shadow-xl transition-all duration-300";
+                motorState.className = "text-xs font-mono px-2 py-1 bg-red-950 text-red-400 rounded border border-red-800 animate-pulse";
+                motorState.innerText = "ACTIVE (HIGH VIBE)";
+            } else {
+                if (isTheftAlert) {
+                    isTheftAlert = false;
+                    addLog("[Security] System secured. Parcel is present and stable.", "text-emerald-400");
+                }
+                securityCard.className = "bg-cardBg border border-cardBorder rounded-2xl p-5 flex flex-col justify-between shadow-lg relative overflow-hidden transition";
+                securityStatus.className = "text-xl font-bold text-emerald-400 tracking-wide";
+                securityStatus.innerText = "SECURE";
+                securityIcon.className = "fa-solid fa-lock";
+                securityIconBg.className = "w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center transition";
+                heroBanner.className = "relative overflow-hidden rounded-2xl bg-gradient-to-r from-gray-900 via-slate-900 to-cyan-950 border border-cardBorder p-6 md:p-10 shadow-xl transition-all duration-300";
+                motorState.className = "text-xs font-mono px-2 py-1 bg-gray-900 rounded text-gray-400";
+                motorState.innerText = "IDLE (0 RPM)";
+            }
+        }
+
+        // Slider Listeners
+        function onWeightSliderChange(val) {
+            currentWeight = parseFloat(val);
+            updateUI();
+        }
+
+        function onDistanceSliderChange(val) {
+            currentDistance = parseFloat(val);
+            updateUI();
+        }
+
+        // Preset Simulations
+        function simulateNormalDelivery() {
+            currentWeight = 3.25;
+            currentDistance = 4.0;
+            addLog("[Simulation] New parcel delivered. Weight: 3.25kg, Ultrasonic distance: 4.0cm.");
+            updateUI();
+        }
+
+        function simulateTheftEvent() {
+            currentWeight = 0.05;
+            currentDistance = 35.0;
+            addLog("[Simulation] Parcel lifted from doorstep! Triggering ESP32 alarm...", "text-red-400");
+            updateUI();
+        }
+
+        function resetSystem() {
+            currentWeight = 1.45;
+            currentDistance = 4.2;
+            isTheftAlert = false;
+            addLog("[System] Dashboard telemetry reset to default state.");
+            updateUI();
+        }
+
+        function testVibrationMotor(state) {
+            const motorState = document.getElementById('motorState');
+            if (state) {
+                motorState.className = "text-xs font-mono px-2 py-1 bg-red-950 text-red-400 rounded border border-red-800 animate-pulse";
+                motorState.innerText = "TESTING ACTIVE";
+                addLog("[Hardware] Manual test command sent: Vibration motor turned ON.");
+            } else {
+                motorState.className = "text-xs font-mono px-2 py-1 bg-gray-900 rounded text-gray-400";
+                motorState.innerText = "IDLE (0 RPM)";
+                addLog("[Hardware] Manual test command sent: Vibration motor turned OFF.");
+            }
+        }
+
+        // Modal Controls
+        function openBomModal() {
+            document.getElementById('bomModal').classList.remove('hidden');
+        }
+
+        function closeBomModal() {
+            document.getElementById('bomModal').classList.add('hidden');
+        }
+
+        // Initial call
+        window.onload = function() {
+            updateUI();
+            addLog("[Ready] Dashboard fully loaded and responsive.");
+        }
+    </script>
+</body>
+</html>
